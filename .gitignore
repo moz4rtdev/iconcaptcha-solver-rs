@@ -1,5 +1,4 @@
 /target
-/captchas
 /node_modules
 Cargo.lock
 cargo.log
