@@ -1,3 +1,7 @@
 /target
 /captchas
+/node_modules
 Cargo.lock
+cargo.log
+index.node
+package-lock.json

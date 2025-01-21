@@ -6,6 +6,9 @@ use std::io::Cursor;
 #[cfg(feature = "speed")]
 use rayon::prelude::*;
 
+#[cfg(feature = "js")]
+use neon::prelude::*;
+
 #[derive(Debug, Clone)]
 pub struct Icon {
     pub position: u32,
@@ -405,6 +408,32 @@ impl IconCaptcha {
         }
         icons_positions[p].clone()
     }
+}
+
+#[cfg(feature = "js")]
+fn solve(mut cx: FunctionContext) -> JsResult<JsObject> {
+    let bs64_img = cx.argument::<JsString>(0)?.value(&mut cx);
+    let cap = IconCaptcha::load_from_base64(&bs64_img);
+    let icon = cap.solve();
+    let obj = cx.empty_object();
+    let position = cx.number(icon.position);
+    obj.set(&mut cx, "position", position)?;
+    let start = cx.number(icon.start);
+    obj.set(&mut cx, "start", start)?;
+    let end = cx.number(icon.end);
+    obj.set(&mut cx, "end", end)?;
+    let center_x = cx.number(icon.center_x);
+    obj.set(&mut cx, "center_x", center_x)?;
+    let center_y = cx.number(icon.center_y);
+    obj.set(&mut cx, "center_y", center_y)?;
+    Ok(obj)
+}
+
+#[cfg(feature = "js")]
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
+    cx.export_function("solve", solve)?;
+    Ok(())
 }
 
 #[cfg(test)]
