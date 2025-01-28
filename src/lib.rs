@@ -1,7 +1,7 @@
 use base64::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageReader, Rgba};
 //use rayon::prelude::*;
-use std::io::Cursor;
+use std::io::{Cursor, Error};
 
 #[cfg(feature = "speed")]
 use rayon::prelude::*;
@@ -28,15 +28,23 @@ impl IconCaptcha {
         Self { img }
     }
 
-    pub fn load_from_base64(base64: &str) -> Self {
-        let base64_dec = BASE64_STANDARD.decode(base64).unwrap();
-        let img = ImageReader::new(Cursor::new(&base64_dec[..]))
+    pub fn load_from_base64(base64: &str) -> Result<Self, Error> {
+        let base64_dec = BASE64_STANDARD.decode(base64);
+        if let Err(_) = base64_dec {
+            return Err(Error::new(
+                std::io::ErrorKind::InvalidData,
+                "invalid base64 image",
+            ));
+        }
+        let img = ImageReader::new(Cursor::new(&base64_dec.unwrap()[..]))
             .with_guessed_format()
             .unwrap()
-            .decode()
-            .unwrap();
+            .decode();
+        if let Err(_) = img {
+            return Err(Error::new(std::io::ErrorKind::InvalidData, "invalid image"));
+        }
 
-        Self { img }
+        Ok(Self { img: img.unwrap() })
     }
 
     pub fn load_from_bytes(bytes: Vec<u8>) -> Self {
@@ -414,7 +422,15 @@ impl IconCaptcha {
 fn solve(mut cx: FunctionContext) -> JsResult<JsObject> {
     let bs64_img = cx.argument::<JsString>(0)?.value(&mut cx);
     let cap = IconCaptcha::load_from_base64(&bs64_img);
-    let icon = cap.solve();
+    if let Err(_) = cap {
+        let obj = cx.empty_object();
+        let msg = cx.string("invalid image");
+        let status = cx.boolean(false);
+        obj.set(&mut cx, "message", msg)?;
+        obj.set(&mut cx, "success", status)?;
+        return Ok(obj);
+    }
+    let icon = cap.unwrap().solve();
     let obj = cx.empty_object();
     let position = cx.number(icon.position);
     obj.set(&mut cx, "position", position)?;
@@ -426,6 +442,8 @@ fn solve(mut cx: FunctionContext) -> JsResult<JsObject> {
     obj.set(&mut cx, "center_x", center_x)?;
     let center_y = cx.number(icon.center_y);
     obj.set(&mut cx, "center_y", center_y)?;
+    let status = cx.boolean(true);
+    obj.set(&mut cx, "success", status)?;
     Ok(obj)
 }
 
