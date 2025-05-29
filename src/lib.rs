@@ -1,3 +1,6 @@
+//! IconCaptcha Solver is a solution for solving IconCaptcha images.
+//! It provides methods to load images from various sources and extract icons from them.
+
 use base64::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageReader, Rgba};
 use std::io::Cursor;
@@ -19,11 +22,23 @@ pub struct IconCaptcha {
 }
 
 impl IconCaptcha {
+    /// Load an image from a file path.
+    /// Example:
+    /// ```
+    /// use iconcaptcha_solver::IconCaptcha;
+    /// let captcha = IconCaptcha::load_image("path/to/image.png");
+    /// ```
     pub fn load_image(path: &str) -> Self {
         let img = ImageReader::open(path).unwrap().decode().unwrap();
         Self { img }
     }
 
+    /// Load an image from a base64 string.
+    /// Example:
+    /// ```
+    /// use iconcaptcha_solver::IconCaptcha;
+    /// let captcha = IconCaptcha::load_from_base64("base64_string");
+    /// ```
     pub fn load_from_base64(base64: &str) -> Result<Self, String> {
         let base64_dec = BASE64_STANDARD.decode(base64);
         if let Err(_) = base64_dec {
@@ -40,6 +55,12 @@ impl IconCaptcha {
         Ok(Self { img: img.unwrap() })
     }
 
+    /// Load an image from a byte array.
+    /// Example:
+    /// ```
+    /// use iconcaptcha_solver::IconCaptcha;
+    /// let captcha = IconCaptcha::load_from_bytes(vec![0, 1, 2, 3]);
+    /// ```
     pub fn load_from_bytes(bytes: Vec<u8>) -> Self {
         let img = ImageReader::new(Cursor::new(&bytes[..]))
             .with_guessed_format()
@@ -50,11 +71,18 @@ impl IconCaptcha {
         Self { img }
     }
 
+    /// Save the captcha image to a file.
+    /// Example:
+    /// ```
+    /// use iconcaptcha_solver::IconCaptcha;
+    /// let captcha = IconCaptcha::load_from_bytes(vec![0, 1, 2, 3]);
+    /// captcha.save("captcha.png");
+    /// ```
     pub fn save(&self, path: &str) {
         self.img.save(path).unwrap()
     }
 
-    pub fn get_positions(&self) -> Vec<Icon> {
+    fn get_positions(&self) -> Vec<Icon> {
         let img = self.img.clone();
         let height = img.height();
         let width = img.width();
@@ -203,6 +231,15 @@ impl IconCaptcha {
         img_rotate
     }
 
+    /// Solve the captcha image.
+    /// This method returns the struct Icon with the some informations about the captcha image.
+    ///
+    /// Example:
+    /// ```
+    /// use iconcaptcha_solver::IconCaptcha;
+    /// let captcha = IconCaptcha::load_from_bytes(vec![0, 1, 2, 3]);
+    /// let icon = captcha.solve();
+    /// ```
     pub fn solve(self) -> Icon {
         let icons_positions = self.get_positions();
         let icons_cropped = self.cropped(&icons_positions);
