@@ -11,6 +11,7 @@ crate-type = ["cdylib", "lib"]
 base64 = "0.22.1"
 image = "0.25.5"
 neon = { version = "1", optional = true }
+reqwest = { version = "0.12.18", features = ["blocking"] }
 
 [dev-dependencies]
 walkdir = "2.5.0"
