@@ -1,6 +1,6 @@
 use base64::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageReader, Rgba};
-use std::io::{Cursor, Error};
+use std::io::Cursor;
 
 #[cfg(feature = "js")]
 use neon::prelude::*;
@@ -24,20 +24,17 @@ impl IconCaptcha {
         Self { img }
     }
 
-    pub fn load_from_base64(base64: &str) -> Result<Self, Error> {
+    pub fn load_from_base64(base64: &str) -> Result<Self, String> {
         let base64_dec = BASE64_STANDARD.decode(base64);
         if let Err(_) = base64_dec {
-            return Err(Error::new(
-                std::io::ErrorKind::InvalidData,
-                "invalid base64 image",
-            ));
+            return Err("Invalid base64".to_string());
         }
         let img = ImageReader::new(Cursor::new(&base64_dec.unwrap()[..]))
             .with_guessed_format()
             .unwrap()
             .decode();
         if let Err(_) = img {
-            return Err(Error::new(std::io::ErrorKind::InvalidData, "invalid image"));
+            return Err("Invalid image".to_string());
         }
 
         Ok(Self { img: img.unwrap() })
@@ -125,8 +122,8 @@ impl IconCaptcha {
             let mut max_x = 0;
             let mut max_y = 0;
 
-            // Percorre todos os pixels e indentifica os cantos
-            // da caixa delimitadora do icone
+            // It goes through all the pixels and identifies the corners
+            // of the icon's bounding box.
             //  (min_x, min_y)
             //   \
             //    \
@@ -151,20 +148,20 @@ impl IconCaptcha {
                 }
             }
 
-            // Calcular as dimensões da nova imagem
-            // resultando na área + 1 pixel para caber
-            // totalmente o icone
+            // Calculate the dimensions of the new image
+            // resulting in the area + 1 pixel to fit
+            // completely the icon
             let new_width = max_x - min_x + 1;
             let new_height = max_y - min_y + 1;
 
-            // Criar uma nova imagem com a área do icone + 1px
+            // Create a new image with the area of the icon + 1px
             let mut new_img: ImageBuffer<Rgba<u8>, Vec<u8>> =
                 ImageBuffer::new(new_width, new_height);
 
-            // Copiar os pixels não nulos para a nova imagem
+            // Copy pixels not nulls for new image
             for (x, y, pixel) in img_rgb.enumerate_pixels() {
                 if pixel.0[3] != 0 {
-                    // centraliza o icone
+                    // centralize the icon
                     let new_x = x - min_x;
                     let new_y = y - min_y;
                     new_img.put_pixel(new_x, new_y, *pixel);
@@ -176,7 +173,7 @@ impl IconCaptcha {
         icons
     }
 
-    fn reflect_image(imgs: Vec<DynamicImage>) -> Vec<DynamicImage> {
+    fn reflect_image(&self, imgs: Vec<DynamicImage>) -> Vec<DynamicImage> {
         let mut reflected_image = vec![];
         for img in imgs {
             let img = img.to_rgba8();
@@ -194,19 +191,19 @@ impl IconCaptcha {
         reflected_image
     }
 
-    fn rotate(image: &DynamicImage) -> Vec<DynamicImage> {
+    fn rotate(&self, image: &DynamicImage) -> Vec<DynamicImage> {
         let mut img_rotate = vec![
             image.clone(),
             image.rotate90(),
             image.rotate180(),
             image.rotate270(),
         ];
-        let img_reflected = Self::reflect_image(img_rotate.clone());
+        let img_reflected = self.reflect_image(img_rotate.clone());
         img_rotate.extend_from_slice(&img_reflected[..]);
         img_rotate
     }
 
-    pub fn solve(&self) -> Icon {
+    pub fn solve(self) -> Icon {
         let icons_positions = self.get_positions();
         let icons_cropped = self.cropped(&icons_positions);
         let mut icons_repeat: Vec<i32> = vec![0; icons_positions.len()];
@@ -215,7 +212,7 @@ impl IconCaptcha {
                 if i == j {
                     continue;
                 }
-                let imgs_rotate = Self::rotate(&img2);
+                let imgs_rotate = self.rotate(&img2);
                 let mut diff = 0;
                 'rotation: for ic in imgs_rotate {
                     for (p1, p2) in img.pixels().zip(ic.pixels()) {
@@ -231,15 +228,16 @@ impl IconCaptcha {
                 }
             }
         }
-        let mut p = 0;
-        let mut before = 100;
+
+        let mut index_position_final = 0;
+        let mut index_position = icons_repeat.len() as i32;
         for (i, n) in icons_repeat.iter().enumerate() {
-            if n < &before {
-                before = *n;
-                p = i;
+            if n < &index_position {
+                index_position = *n;
+                index_position_final = i;
             }
         }
-        icons_positions[p].clone()
+        icons_positions[index_position_final].clone()
     }
 }
 
