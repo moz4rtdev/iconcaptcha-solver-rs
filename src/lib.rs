@@ -3,7 +3,7 @@
 
 use base64::prelude::*;
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageReader, Rgba};
-use std::io::Cursor;
+use std::{fmt::Display, io::Cursor};
 
 #[cfg(feature = "js")]
 use neon::prelude::*;
@@ -15,6 +15,16 @@ pub struct Icon {
     pub end: u32,
     pub center_x: u32,
     pub center_y: u32,
+}
+
+impl Display for Icon {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Icon {{ position: {}, start: {}, end: {}, center_x: {}, center_y: {} }}",
+            self.position, self.start, self.end, self.center_x, self.center_y
+        )
+    }
 }
 
 pub struct IconCaptcha {
