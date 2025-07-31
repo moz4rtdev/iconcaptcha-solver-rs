@@ -13,17 +13,17 @@
     "build": "npm run cargo-build -- --release",
     "cross": "npm run cross-build -- --release"
   },
-  "author": "mallocdev",
+  "author": "moz4rtdev",
   "license": "ISC",
   "devDependencies": {
     "@neon-rs/cli": "0.1.82"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mallocdev/iconcaptcha-solver-rs.git"
+    "url": "git+https://github.com/moz4rtdev/iconcaptcha-solver-rs.git"
   },
   "bugs": {
-    "url": "https://github.com/mallocdev/iconcaptcha-solver-rs/issues"
+    "url": "https://github.com/moz4rtdev/iconcaptcha-solver-rs/issues"
   },
-  "homepage": "https://github.com/mallocdev/iconcaptcha-solver-rs#readme"
+  "homepage": "https://github.com/moz4rtdev/iconcaptcha-solver-rs#readme"
 }
